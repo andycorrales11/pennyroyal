@@ -40,11 +40,23 @@ def to_parquet(
         if col in df.columns:
             df[col] = df[col].astype(dtype.to_pandas_dtype())
 
+        # ---------- build a minimal Arrow schema with only present columns ----------
+    selected_fields = [
+        pa.field(col, dtype) for col, dtype in DTYPE_MAP.items() if col in df.columns
+    ]
+    schema = pa.schema(selected_fields) if selected_fields else None
+
+    # ---------- write partitioned Parquet ----------
     table_path = _DATA_ROOT / table
     table_path.mkdir(parents=True, exist_ok=True)
 
+    table = (
+        pa.Table.from_pandas(df, schema=schema, preserve_index=False)
+        if schema is not None
+        else pa.Table.from_pandas(df, preserve_index=False)
+    )
     pq.write_to_dataset(
-        pa.Table.from_pandas(df, schema=pa.schema(DTYPE_MAP), preserve_index=False),
+        table,
         root_path=str(table_path),
         partition_cols=partition_cols,
         compression="snappy",
