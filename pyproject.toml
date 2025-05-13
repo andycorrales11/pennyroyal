@@ -3,7 +3,7 @@ name = "fantasy-football-workbench"
 version = "0.1.0"
 description = "Python workbench for drafting and managing fantasy‑football teams"
 authors = [{name = "Andres Corrales", email = "you@example.com"}]
-license = {text = "MIT"}            # or "GPL-3.0-only"
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.11"
 
@@ -26,3 +26,9 @@ dev = [
   "nbstripout>=0.7",
   "pre-commit>=3.7",
 ]
+
+[tool.setuptools.packages.find]
+# search the current directory
+where = ["."]
+include = ["ffwb*"]       # what to publish
+exclude = ["notebooks*", "tests*"]
