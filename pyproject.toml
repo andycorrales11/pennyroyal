@@ -1,0 +1,28 @@
+[project]
+name = "fantasy-football-workbench"
+version = "0.1.0"
+description = "Python workbench for drafting and managing fantasy‑football teams"
+authors = [{name = "Andres Corrales", email = "you@example.com"}]
+license = {text = "MIT"}            # or "GPL-3.0-only"
+readme = "README.md"
+requires-python = ">=3.11"
+
+dependencies = [
+  "pandas>=2.2",
+  "pyarrow>=15",          # Parquet IO
+  "requests>=2.32",       # API calls
+  "pydantic>=2.7",
+  "rich>=13.7",           # CLI tables
+  "jupyterlab>=4.2",
+  "ipython>=8.24",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+  "pytest-nbval>=0.10",
+  "ruff>=0.4",
+  "black>=24.4",
+  "nbstripout>=0.7",
+  "pre-commit>=3.7",
+]
