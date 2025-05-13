@@ -59,14 +59,19 @@ def ingest_teams(league_id: str) -> pd.DataFrame:
 
 
 def ingest_rosters_weekly(league_id: str, *, weeks: list[int]) -> pd.DataFrame:
-    """Fetch roster slots for each week requested."""
+    """
+    Pull each week's matchup listings (includes starters list) and store as roster_weekly.
+    For now we flatten starters into fixed slots QB,RB1,RB2,…; refine later.
+    """
     frames: list[pd.DataFrame] = []
+
     for wk in weeks:
-        raw = _get(f"league/{league_id}/rosters/{wk}")
-        df = pd.json_normalize(raw)
+        matchups = _get(f"league/{league_id}/matchups/{wk}")  # ✅ valid endpoint
+        df = pd.json_normalize(matchups)
         df["league_id"] = league_id
         df["week"] = wk
         frames.append(df)
+
     roster = pd.concat(frames, ignore_index=True)
-    io.to_parquet(roster, "roster_weekly", partition_cols=["week"])
+    io.to_parquet(roster, "roster_weekly", partition_cols=["season", "week"])
     return roster
