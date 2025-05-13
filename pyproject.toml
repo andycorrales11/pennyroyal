@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "pytest>=8.2",
-  "pytest-nbval>=0.10",
+  "nbval>=0.10",
   "ruff>=0.4",
   "black>=24.4",
   "nbstripout>=0.7",
