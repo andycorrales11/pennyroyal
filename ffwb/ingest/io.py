@@ -10,15 +10,16 @@ import pyarrow.parquet as pq
 
 # ---------- central dtype map ----------
 DTYPE_MAP: dict[str, pa.DataType] = {
-    "player_id": pa.string(),
-    "team_id": pa.string(),
-    "league_id": pa.string(),
-    "season": pa.int16(),
-    "week": pa.int8(),
-    "src": pa.dictionary(pa.int8(), pa.string()),  # categorical
-    "proj_pts": pa.float32(),
+    "pass_yds": pa.int32(),
+    "pass_tds": pa.int8(),
+    "pass_ints": pa.int8(),
+    "rush_yds": pa.int32(),
+    "rush_tds": pa.int8(),
+    "rec_rec": pa.int8(),
+    "rec_yds": pa.int32(),
+    "rec_tds": pa.int8(),
+    "fumbles_lost": pa.int8(),
     "actual_pts": pa.float32(),
-    # …extend as new stat columns arrive
 }
 
 # ---------- helpers ----------
