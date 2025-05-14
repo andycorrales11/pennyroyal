@@ -41,13 +41,23 @@ def to_parquet(
         if col in df.columns:
             df[col] = df[col].astype(dtype.to_pandas_dtype())
 
-        # ---------- build a minimal Arrow schema with only present columns ----------
-    selected_fields = [
-        pa.field(col, dtype) for col, dtype in DTYPE_MAP.items() if col in df.columns
-    ]
-    schema = pa.schema(selected_fields) if selected_fields else None
+    # --------- build Arrow schema (present cols + partition cols) ----------
+    selected_fields = {
+        col: pa.field(col, dtype)
+        for col, dtype in DTYPE_MAP.items()
+        if col in df.columns
+    }
 
-    # ---------- write partitioned Parquet ----------
+    # ensure partition columns are present
+    for pc in partition_cols:
+        if pc not in selected_fields:
+            # derive Arrow dtype from the pandas column
+            arrow_type = pa.from_numpy_dtype(df[pc].dtype)
+            selected_fields[pc] = pa.field(pc, arrow_type)
+
+    schema = pa.schema(list(selected_fields.values())) if selected_fields else None
+
+    # --------- write partitioned Parquet ----------
     table_path = _DATA_ROOT / table
     table_path.mkdir(parents=True, exist_ok=True)
 
