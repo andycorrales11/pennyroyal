@@ -5,6 +5,7 @@ import logging
 from typing import Dict
 
 import pandas as pd
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -72,3 +73,45 @@ def score_weekly(
         df = df.drop(columns=list(usable_rules))
 
     return df
+
+
+def aggregate_season(
+    scored: pd.DataFrame,
+    *,
+    agg: str | dict[str, str] = "sum",
+    points_col: str = "fantasy_pts",
+) -> pd.DataFrame:
+    """
+    Collapse weekly rows to one row per (player_id, season).
+
+    Parameters
+    ----------
+    scored : DataFrame
+        Must include `player_id`, `season`, `week`, and `points_col`.
+    agg : str or dict, default "sum"
+        Aggregation for points column.  Use "mean" for best‑ball leagues.
+        You can also pass dict ({"fantasy_pts": "mean", "rush_yds": "sum"}).
+    points_col : str, default "fantasy_pts"
+        Name of the points column to aggregate.
+
+    Returns
+    -------
+    DataFrame
+        Columns: player_id, season, <aggregated stats...>
+    """
+    if points_col not in scored.columns:
+        raise KeyError(f"{points_col} not found in DataFrame")
+
+    if isinstance(agg, str):
+        agg_map = {points_col: agg}
+    else:
+        agg_map = agg
+
+    out = (
+        scored.groupby(["player_id", "season"], as_index=False)
+        .agg(agg_map)
+        .rename(columns={points_col: "fantasy_pts_season"})
+    )
+    # ensure deterministic float dtype
+    out["fantasy_pts_season"] = out["fantasy_pts_season"].astype(np.float32)
+    return out
