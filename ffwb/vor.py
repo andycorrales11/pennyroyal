@@ -98,3 +98,15 @@ def compute_vor(
     )
 
     return merged
+
+
+def attach_adp(
+    vor_df: pd.DataFrame,
+    adp_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Join ADP onto VOR table and compute 'value_over_adp' (lower ADP + high VOR)."""
+    merged = vor_df.merge(
+        adp_df[["player_id", "adp", "adp_stdev"]], on="player_id", how="left"
+    )
+    merged["value_vs_adp"] = merged["vor"] / merged["adp"]
+    return merged
