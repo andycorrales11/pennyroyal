@@ -50,17 +50,36 @@ def ingest_actual_weekly(season: int, weeks: list[int] | None = None) -> pd.Data
     if gsis_col != "gsis_id":
         raw = raw.rename(columns={gsis_col: "gsis_id"})
 
-    # ------------------- NEW: rename stat columns ----------------------------
+    # ------------------- rename stat columns to canonical --------------------
     canon_rename = {src: tgt for src, tgt in _ALIAS_MAP.items() if src in raw.columns}
     raw = raw.rename(columns=canon_rename)
 
-    # ensure every STAT_COL exists (back‑fill zeros for bye weeks / DST rows)
+    # ensure every STAT_COL exists (zero-fill for byes/DST)
     for col in STAT_COLS:
         if col not in raw.columns:
             raw[col] = 0
 
-    # ------------------- x‑walk and export -----------------------------------
+    # ------------------- x-walk and export -----------------------------------
     xwalk = ids.build_xwalk(season)
+
+    # ─── DEBUG & NORMALIZE GSIS IDs ─────────────────────────────────────────
+    # Strip dashes and leading zeros so raw IDs match roster xwalk
+    def normalize(s):
+        return (
+            s.astype("string")
+            .str.replace("-", "", regex=True)
+            .str.lstrip("0")
+            .str.strip()
+        )
+
+    raw["gsis_id"] = normalize(raw["gsis_id"])
+    xwalk["gsis_id"] = normalize(xwalk["gsis_id"])
+
+    print("WEEKLY gsis_id sample:", raw["gsis_id"].drop_duplicates().head(10))
+    print("ROSTER  gsis_id sample:", xwalk["gsis_id"].drop_duplicates().head(10))
+    common = set(raw["gsis_id"].dropna()) & set(xwalk["gsis_id"].dropna())
+    print("Common GSIS IDs:", len(common))
+
     merged = raw.merge(xwalk, on="gsis_id", how="left")
 
     df = (
@@ -68,5 +87,6 @@ def ingest_actual_weekly(season: int, weeks: list[int] | None = None) -> pd.Data
         .rename(columns={"sleeper_id": "player_id"})
         .astype({"season": "int16", "week": "int8"})
     )
+
     io.to_parquet(df, "actual_weekly", partition_cols=["season", "week"])
     return df

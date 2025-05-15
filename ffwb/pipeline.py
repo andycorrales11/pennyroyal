@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pandas as pd
 from rich import print
-
+import sys
 from ffwb import scoring, vor
 from ffwb.ingest import io
 
@@ -33,6 +33,9 @@ ROSTER_SETTINGS = {"qb": 1, "rb": 2, "wr": 2, "te": 1}
 #  calc‑season: weekly → season totals
 # --------------------------------------------------------------------------- #
 def calc_season_main() -> None:
+    print(f"cwd: {Path.cwd()}")
+    print(f"DATA_DIR: {DATA_DIR}")
+    print(f"sys.argv: {sys.argv}")
     parser = argparse.ArgumentParser(description="Score weekly stats → season totals")
     parser.add_argument("--season", type=int, required=True)
     args = parser.parse_args()
@@ -44,22 +47,33 @@ def calc_season_main() -> None:
 
     print(f"[green]Loading weekly stats from {wk_path}[/green]")
     df_weekly = pd.read_parquet(wk_path)
+    print(
+        f"Loaded weekly DataFrame: {df_weekly.shape} rows, columns {list(df_weekly.columns)}"
+    )
 
     if "season" not in df_weekly.columns:
         df_weekly["season"] = args.season
 
     if "fantasy_pts" not in df_weekly.columns:
-        print("RULE KEYS:", DEFAULT_RULES.keys())
         df_weekly = scoring.score_weekly(df_weekly, DEFAULT_RULES)
-    if not wk_path.exists():
-        print(f"[red]No weekly stats found at {wk_path}[/red]")
-        return
 
     print(f"[green]Loading weekly stats from {wk_path}[/green]")
     # df_weekly = pd.read_parquet(wk_path)
-
+    print(df_weekly.head(10).loc[:, ["player_id", "season", "week", "fantasy_pts"]])
+    print("Unique seasons:", df_weekly["season"].unique())
+    print("Unique players:", df_weekly["player_id"].nunique())
+    print(
+        "fantasy_pts range:",
+        df_weekly["fantasy_pts"].min(),
+        "to",
+        df_weekly["fantasy_pts"].max(),
+    )
     totals = scoring.aggregate_season(df_weekly)
-    io.to_parquet(totals, "totals", partition_cols=["season"])
+    print(
+        f"Aggregated season totals: {totals.shape} rows, columns {list(totals.columns)}"
+    )
+    out_path = io.to_parquet(totals, "totals", partition_cols=["season"])
+    print(f"[green]to_parquet returned path: {out_path}[/green]")
     print(f"[green]Wrote season totals to data/totals/season={args.season}[/green]")
 
 
@@ -77,6 +91,7 @@ def calc_vor_main() -> None:
 
     if part_path.exists():
         totals = pd.read_parquet(part_path)
+        totals["season"] = args.season
     elif root_path.exists():
         # fall back: load full dataset and filter
         totals = pd.read_parquet(root_path).query("season == @args.season")
@@ -86,27 +101,20 @@ def calc_vor_main() -> None:
     else:
         print(f"[red]No season totals found at {root_path}[/red]")
         return
+    from ffwb.ingest.ids import build_xwalk
+
+    # build_xwalk returns gsis_id → sleeper_id, full_name, position
+    xwalk = build_xwalk(args.season).rename(columns={"sleeper_id": "player_id"})[
+        ["player_id", "position"]
+    ]
+    totals = totals.merge(xwalk, on="player_id", how="left")
 
     vor_df = vor.compute_vor(
         totals,
         roster_settings=ROSTER_SETTINGS,
         num_teams=args.teams,
     )
+    vor_df["season"] = args.season
+
     io.to_parquet(vor_df, "vor", partition_cols=["season"])
     print(f"[green]Wrote VOR table to data/vor/season={args.season}[/green]")
-
-
-# --------------------------------------------------------------------------- #
-#  module CLI dispatch
-# --------------------------------------------------------------------------- #
-if __name__ == "__main__":
-    import sys
-
-    if sys.argv[1:2] == ["calc-season"]:
-        sys.argv.pop(1)
-        calc_season_main()
-    elif sys.argv[1:2] == ["calc-vor"]:
-        sys.argv.pop(1)
-        calc_vor_main()
-    else:
-        print("Use: python -m ffwb.pipeline calc-season|calc-vor [...]")

@@ -15,7 +15,10 @@ def build_xwalk(season: int) -> pd.DataFrame:
     roster = import_seasonal_rosters([season])
 
     # ---------- harmonise GSIS id ----------
-    if "gsis_id" in roster.columns:
+    if "player_id" in roster.columns:
+        # nfl_data_py’s import_seasonal_rosters puts the NFL GSIS ID in `player_id`
+        roster = roster.rename(columns={"player_id": "gsis_id"})
+    elif "gsis_id" in roster.columns:
         roster = roster.rename(columns={"gsis_id": "gsis_id"})
     elif "gsis_it_id" in roster.columns:
         roster = roster.rename(columns={"gsis_it_id": "gsis_id"})
@@ -23,7 +26,6 @@ def build_xwalk(season: int) -> pd.DataFrame:
         roster = roster.rename(columns={"gameday_id": "gsis_id"})
     else:
         raise KeyError("No GSIS id column found in seasonal roster")
-
     # ---------- harmonise full name ----------
     if "display_name" in roster.columns:
         roster = roster.rename(columns={"display_name": "full_name"})
@@ -40,4 +42,6 @@ def build_xwalk(season: int) -> pd.DataFrame:
         .astype({"gsis_id": "string", "sleeper_id": "string"})
         .drop_duplicates("gsis_id")
     )
+    print("xwalk (gsis_id → sleeper_id) sample:", df.head(10))
+    print("Total xwalk rows:", len(df))
     return df
