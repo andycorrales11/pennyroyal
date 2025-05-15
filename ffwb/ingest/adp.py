@@ -106,6 +106,7 @@ def _map_to_players(adp_raw: pd.DataFrame, season: int) -> pd.DataFrame:
         .dropna(subset=["sleeper_id"])
         .rename(columns={"sleeper_id": "player_id"})
     )
+    adp["adp_stdev"] = float("nan")
     return adp[["player_id", "position", "adp"]]
 
 

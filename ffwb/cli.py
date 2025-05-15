@@ -50,7 +50,7 @@ def draft_board() -> None:
         adp = _map_to_players(adp_raw, args.season)
     else:
         adp = _load_parquet(f"adp/season={args.season}/source={args.source}")
-        if adp.empty:
+        if adp.empty or "adp" not in adp.columns:
             try:
                 adp = ingest_adp(args.season, source=args.source, teams=args.teams)
             except ADPError as e:
@@ -66,8 +66,11 @@ def draft_board() -> None:
         print("[yellow]No VOR data – compute season totals first.[/yellow]")
         return
 
-    board = vor.attach_adp(vor_df, adp).sort_values(
-        ["position", "tier", "value_vs_adp"], ascending=[True, True, False]
+    board = vor.attach_adp(vor_df, adp)
+    exclude = ["DB", "DL", "LB", "P"]
+    board = board[~board["position"].isin(exclude)]
+    board = board.sort_values(
+        ["tier", "value_vs_adp", "fantasy_pts_season"], ascending=[True, False, False]
     )
 
     table = Table(title=f"Draft Board {args.season}")
