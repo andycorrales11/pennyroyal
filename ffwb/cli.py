@@ -8,6 +8,7 @@ from rich import print
 from rich.table import Table
 
 from ffwb.ingest.adp import ingest_adp, ADPError, _map_to_players
+from ffwb.ingest.ids import build_xwalk
 
 # from ffwb.ingest import io
 from ffwb import vor
@@ -69,37 +70,42 @@ def draft_board() -> None:
     board = vor.attach_adp(vor_df, adp)
     exclude = ["DB", "DL", "LB", "P"]
     board = board[~board["position"].isin(exclude)]
+    name_map = build_xwalk(
+        args.season
+    ).rename(  # returns columns: gsis_id, sleeper_id, full_name, position
+        columns={"sleeper_id": "player_id"}
+    )[
+        ["player_id", "full_name"]
+    ]
+    board = board.merge(name_map, on="player_id", how="left")
+
+    # Move full_name up front and drop raw IDs if you like
+    board = board.rename(columns={"full_name": "player_name"})
+    cols = ["player_name"] + [c for c in board.columns if c != "player_name"]
+    board = board[cols]
     board = board.sort_values(
         ["tier", "value_vs_adp", "fantasy_pts_season"], ascending=[True, False, False]
     )
 
     table = Table(title=f"Draft Board {args.season}")
-    for col in [
-        "player_id",
+    # show player_name instead of player_id
+    display_cols = [
+        "player_name",
         "position",
         "fantasy_pts_season",
         "vor",
         "tier",
         "adp",
         "value_vs_adp",
-    ]:
-        table.add_column(col)
+    ]
+    for col in display_cols:
+        table.add_column(col.replace("_", " ").title())
 
     for _, row in board.head(150).iterrows():
         table.add_row(
             *(
                 f"{x:.2f}" if isinstance(x, float) and not pd.isna(x) else str(x)
-                for x in row[
-                    [
-                        "player_id",
-                        "position",
-                        "fantasy_pts_season",
-                        "vor",
-                        "tier",
-                        "adp",
-                        "value_vs_adp",
-                    ]
-                ]
+                for x in row[display_cols]
             )
         )
 

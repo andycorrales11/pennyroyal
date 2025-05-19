@@ -42,6 +42,4 @@ def build_xwalk(season: int) -> pd.DataFrame:
         .astype({"gsis_id": "string", "sleeper_id": "string"})
         .drop_duplicates("gsis_id")
     )
-    print("xwalk (gsis_id → sleeper_id) sample:", df.head(10))
-    print("Total xwalk rows:", len(df))
     return df
