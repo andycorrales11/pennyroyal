@@ -29,8 +29,7 @@ def _validate_rules(df: pd.DataFrame, rules: Dict[str, float]) -> Dict[str, floa
 
     if missing:
         logger.warning(
-            "score_weekly: stat columns not found in DataFrame and "
-            "treated as 0 → %s",
+            "score_weekly: stat columns not found in DataFrame and treated as 0 → %s",
             ", ".join(missing),
         )
     return usable_rules

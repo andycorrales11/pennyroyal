@@ -98,3 +98,63 @@ def compute_vor(
     )
 
     return merged
+
+
+def attach_adp(
+    vor_df: pd.DataFrame,
+    adp_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """
+    Join ADP onto VOR and compute 'value_vs_adp'.
+    This will auto-detect whichever ADP column you have (e.g. 'adp_mean', 'avg_pick', etc.)
+    and any stdev column (e.g. 'adp_std', 'std_dev', ...). If none are found,
+    fills with NA so the merge still works.
+    """
+    # Make a copy so we don’t clobber the original
+    adp = adp_df.copy()
+
+    # 1) Find the ADP column
+    adp_cols = [
+        c for c in adp.columns if "adp" in c.lower() and c.lower() not in ("adp_stdev",)
+    ]
+    if "adp" in adp.columns:
+        adp_col = "adp"
+    elif adp_cols:
+        # pick the first matching column (e.g. 'adp_mean' or 'avg_pick')
+        adp_col = adp_cols[0]
+        adp = adp.rename(columns={adp_col: "adp"})
+    else:
+        adp_col = None
+
+    # 2) Find the ADP-stdev column
+    stdev_cols = [
+        c for c in adp.columns if any(x in c.lower() for x in ("stdev", "std", "dev"))
+    ]
+    if "adp_stdev" in adp.columns:
+        stdev_col = "adp_stdev"
+    elif stdev_cols:
+        stdev_col = stdev_cols[0]
+        adp = adp.rename(columns={stdev_col: "adp_stdev"})
+    else:
+        stdev_col = None
+
+    # 3) Ensure we have the columns (or create them)
+    if adp_col is None:
+        adp["adp"] = pd.NA
+    if stdev_col is None:
+        adp["adp_stdev"] = pd.NA
+
+    # 4) Now do the merge
+    merged = vor_df.merge(
+        adp[["player_id", "adp", "adp_stdev"]],
+        on="player_id",
+        how="left",
+    )
+
+    # 5) Compute value_vs_adp if possible
+    merged["value_vs_adp"] = np.where(
+        merged["adp"].notna() & (merged["adp"] != 0),
+        merged["vor"] / merged["adp"],
+        pd.NA,
+    )
+    return merged
