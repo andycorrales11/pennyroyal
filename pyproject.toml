@@ -38,3 +38,4 @@ exclude = ["notebooks*", "tests*"]
 ffwb = "ffwb.cli:draft_board"
 ffwb-calc-season = "ffwb.pipeline:calc_season_main"
 ffwb-calc-vor    = "ffwb.pipeline:calc_vor_main"
+ffwb-tank = "ffwb.cli_proj_tank:tank_board"
