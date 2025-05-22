@@ -1,10 +1,10 @@
 # app/main.py
-from fastapi import FastAPI, Request, Query
+from fastapi import FastAPI, HTTPException, Request, Query
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pathlib import Path
-from .services.board import load_board
+from .services.board import load_board, load_season_board
 
 BASE = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE / "templates"))
@@ -39,3 +39,23 @@ async def draft_board(
         "weekly_board.html",
         {"request": request, "board": board, "season": season, "week": week},
     )
+
+
+@app.get("/season", tags=["draft"])
+async def season_board(request: Request, season: int = 2024, teams: int = 12):
+    """
+    Season-long draft board (VOR vs replacement).
+    """
+    try:
+        board = load_season_board(season, teams)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
+
+    context = dict(
+        request=request,
+        title=f"{season} Draft Board (Full Season)",
+        board=board.to_dict(orient="records"),
+        season=season,
+        mode="season",
+    )
+    return templates.TemplateResponse("board.html", context)

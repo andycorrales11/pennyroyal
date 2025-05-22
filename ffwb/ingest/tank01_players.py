@@ -5,8 +5,10 @@ from typing import List, Dict
 
 import pandas as pd
 import requests
-
+from dotenv import load_dotenv
 from ffwb.ingest import io as io_utils
+
+load_dotenv()
 
 _URL = (
     "https://tank01-nfl-live-in-game-real-time-statistics-nfl.p.rapidapi.com/"

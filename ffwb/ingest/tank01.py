@@ -8,6 +8,9 @@ import requests
 import json
 import logging
 from ffwb.ingest import io as io_utils
+from dotenv import load_dotenv
+
+load_dotenv()
 
 URL = (
     "https://tank01-nfl-live-in-game-real-time-statistics-nfl.p.rapidapi.com/"
