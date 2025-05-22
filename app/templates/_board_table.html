@@ -1,0 +1,24 @@
+<table class="min-w-full text-sm">
+  <thead class="bg-slate-200 text-xs uppercase">
+    <tr>
+      <th class="px-2 py-1 text-left">ID</th>
+      <th class="px-2 py-1 text-left">Name</th>
+      <th class="px-2 py-1 text-left">Pos</th>
+      <th class="px-2 py-1 text-right">Pts</th>
+      <th class="px-2 py-1 text-right">VOR</th>
+      <th class="px-2 py-1 text-right">Tier</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in board %}
+    <tr class="odd:bg-white even:bg-slate-50">
+      <td class="px-2 py-1">{{ row.player_id }}</td>
+      <td class="px-2 py-1">{{ row.full_name }}</td>
+      <td class="px-2 py-1">{{ row.position }}</td>
+      <td class="px-2 py-1 text-right">{{ row.pts }}</td>
+      <td class="px-2 py-1 text-right">{{ row.vor_f }}</td>
+      <td class="px-2 py-1 text-right">{{ row.tier }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -25,6 +25,7 @@ dist/
 .venv/
 env/
 venv/
+.env
 
 ########################################################
 #  Jupyter & notebook helpers
